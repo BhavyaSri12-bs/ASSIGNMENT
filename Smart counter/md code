@@ -1,0 +1,21 @@
+`timescale 1ns/1ps
+module smart_counter (
+    input  wire       clk,
+    input  wire       rst,       // asynchronous reset
+    input  wire       enable,    // increment enable
+    input  wire       load,      // load enable
+    input  wire [7:0] data_in,   // value to load
+    output reg  [7:0] count      // counter output
+);
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            count <= 8'd0;                  // reset counter
+        end else if (load) begin
+            count <= data_in;               // load new value
+        end else if (enable) begin
+            count <= count + 1;             // increment
+        end
+    end
+
+endmodule
