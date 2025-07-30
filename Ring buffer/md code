@@ -1,0 +1,51 @@
+`timescale 1ns/1ps
+module ring_buffer (
+    input  wire       clk,
+    input  wire       rst,
+    input  wire       write_en,
+    input  wire       read_en,
+    input  wire [7:0] data_in,
+    output reg  [7:0] data_out,
+    output reg        full,
+    output reg        empty
+);
+
+    reg [7:0] mem [0:3];   // 4-entry memory
+    reg [1:0] w_ptr;       // write pointer
+    reg [1:0] r_ptr;       // read pointer
+    reg [2:0] count;       // number of stored elements (0–4)
+
+    integer i;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            w_ptr  <= 2'd0;
+            r_ptr  <= 2'd0;
+            count  <= 3'd0;
+            data_out <= 8'd0;
+            full   <= 1'b0;
+            empty  <= 1'b1;
+            for (i=0; i<4; i=i+1)
+                mem[i] <= 8'd0;
+        end else begin
+            // WRITE
+            if (write_en && !full) begin
+                mem[w_ptr] <= data_in;
+                w_ptr <= w_ptr + 1;
+                count <= count + 1;
+            end
+
+            // READ
+            if (read_en && !empty) begin
+                data_out <= mem[r_ptr];
+                r_ptr <= r_ptr + 1;
+                count <= count - 1;
+            end
+
+            // FLAGS
+            full  <= (count == 3'd4);
+            empty <= (count == 3'd0);
+        end
+    end
+
+endmodule
