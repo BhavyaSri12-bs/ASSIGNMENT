@@ -1,0 +1,50 @@
+`timescale 1ns/1ps
+module tb_priority_lock;
+
+    reg clk;
+    reg rst;
+    reg [3:0] req;
+    wire [3:0] grant;
+
+    // Instantiate DUT
+    priority_lock dut (
+        .clk(clk),
+        .rst(rst),
+        .req(req),
+        .grant(grant)
+    );
+
+    // Clock: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        $dumpfile("priority_lock.vcd");
+        $dumpvars(0, tb_priority_lock);
+
+        $monitor("Time=%0t | req=%b | grant=%b", $time, req, grant);
+
+        // Reset
+        rst = 1; req = 4'b0000;
+        #12 rst = 0;
+
+        // Single request
+        req = 4'b0001; #20;
+
+        // Two overlapping requests
+        req = 4'b0011; #40;
+
+        // Persistent request from req2
+        req = 4'b0100; #40;
+
+        // All four requesting
+        req = 4'b1111; #80;
+
+        // Drop to no requests
+        req = 4'b0000; #20;
+
+        $finish;
+    end
+
+endmodule
+
