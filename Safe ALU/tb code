@@ -1,0 +1,59 @@
+`timescale 1ns/1ps
+module tb_safe_alu;
+
+    reg [7:0] a, b;
+    reg [1:0] opcode;
+    wire [7:0] result;
+    wire zero, carry, overflow;
+
+    // Instantiate DUT
+    safe_alu dut (
+        .a(a),
+        .b(b),
+        .opcode(opcode),
+        .result(result),
+        .zero(zero),
+        .carry(carry),
+        .overflow(overflow)
+    );
+
+    task test_case(input [7:0] ta, tb, input [1:0] top, input [7:0] exp_res);
+        begin
+            a = ta; b = tb; opcode = top; #5;
+            $display("OP=%b | a=%d, b=%d => result=%d | Z=%b C=%b O=%b",
+                     opcode, a, b, result, zero, carry, overflow);
+        end
+    endtask
+
+    initial begin
+        $dumpfile("safe_alu.vcd");
+        $dumpvars(0, tb_safe_alu);
+
+        // ADD normal
+        test_case(8'd10, 8'd20, 2'b00, 8'd30);
+
+        // ADD overflow case: 127 + 1 = -128 (signed overflow)
+        test_case(8'd127, 8'd1, 2'b00, 8'd128);
+
+        // ADD carry case: 255 + 1 = 0 with carry
+        test_case(8'd255, 8'd1, 2'b00, 8'd0);
+
+        // SUB normal
+        test_case(8'd50, 8'd20, 2'b01, 8'd30);
+
+        // SUB zero result
+        test_case(8'd25, 8'd25, 2'b01, 8'd0);
+
+        // SUB overflow: -128 - 1
+        test_case(8'd128, 8'd1, 2'b01, 8'd127);
+
+        // AND
+        test_case(8'b10101010, 8'b11001100, 2'b10, 8'b10001000);
+
+        // OR
+        test_case(8'b10101010, 8'b01010101, 2'b11, 8'b11111111);
+
+        $finish;
+    end
+
+endmodule
