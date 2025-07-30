@@ -1,0 +1,37 @@
+`timescale 1ns/1ps
+module byte_streamer (
+    input  wire clk,
+    input  wire rst,            // synchronous reset
+    input  wire shift_enable,   // shift enable
+    input  wire serial_in,      // serial input bit
+    output reg  [7:0] parallel_out, // 8-bit parallel output
+    output reg  data_valid      // high for 1 clock when byte ready
+);
+
+    reg [2:0] bit_count;        // counts bits from 0 to 7
+    reg [7:0] shift_reg;        // holds incoming bits
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            bit_count    <= 3'd0;
+            shift_reg    <= 8'd0;
+            parallel_out <= 8'd0;
+            data_valid   <= 1'b0;
+        end 
+        else begin
+            data_valid <= 1'b0;  // default low unless full byte ready
+            if (shift_enable) begin
+                shift_reg <= {shift_reg[6:0], serial_in};  // shift left, LSB in
+                bit_count <= bit_count + 1;
+
+                if (bit_count == 3'd7) begin
+                    parallel_out <= {shift_reg[6:0], serial_in};
+                    data_valid   <= 1'b1;
+                    bit_count    <= 3'd0;
+                end
+            end
+        end
+    end
+
+endmodule
+
