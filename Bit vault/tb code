@@ -1,0 +1,71 @@
+`timescale 1ns/1ps
+module tb_bitvault;
+
+    reg clk;
+    reg rst;
+    reg we;
+    reg [1:0] waddr;
+    reg [7:0] wdata;
+    reg [1:0] raddr;
+    wire [7:0] rdata;
+
+    // Instantiate DUT
+    bitvault dut (
+        .clk(clk),
+        .rst(rst),
+        .we(we),
+        .waddr(waddr),
+        .wdata(wdata),
+        .raddr(raddr),
+        .rdata(rdata)
+    );
+
+    // Clock generator: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        $dumpfile("bitvault.vcd");
+        $dumpvars(0, tb_bitvault);
+
+        $monitor("Time=%0t | rst=%b | we=%b | waddr=%b | wdata=%d | raddr=%b | rdata=%d",
+                 $time, rst, we, waddr, wdata, raddr, rdata);
+
+        // Reset
+        rst = 1; we = 0; waddr = 0; wdata = 0; raddr = 0;
+        #12 rst = 0;
+
+        // Write to register 0
+        we = 1; waddr = 2'b00; wdata = 8'd10;
+        #10 we = 0;
+
+        // Read back register 0
+        raddr = 2'b00; #10;
+
+        // Write to register 1
+        we = 1; waddr = 2'b01; wdata = 8'd55;
+        #10 we = 0;
+
+        // Read back register 1
+        raddr = 2'b01; #10;
+
+        // Attempt overwrite with we=0 (should not change)
+        waddr = 2'b01; wdata = 8'd99; we = 0;
+        #10 raddr = 2'b01; #10;
+
+        // Write to register 2 and register 3
+        we = 1; waddr = 2'b10; wdata = 8'd77;
+        #10 we = 1; waddr = 2'b11; wdata = 8'd200;
+        #10 we = 0;
+
+        // Read back all registers
+        raddr = 2'b00; #10;
+        raddr = 2'b01; #10;
+        raddr = 2'b10; #10;
+        raddr = 2'b11; #10;
+
+        $finish;
+    end
+
+endmodule
+
