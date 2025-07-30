@@ -1,0 +1,59 @@
+`timescale 1ns/1ps
+module tb_smart_counter;
+
+    reg clk;
+    reg rst;
+    reg enable;
+    reg load;
+    reg [7:0] data_in;
+    wire [7:0] count;
+
+    // Instantiate DUT
+    smart_counter dut (
+        .clk(clk),
+        .rst(rst),
+        .enable(enable),
+        .load(load),
+        .data_in(data_in),
+        .count(count)
+    );
+
+    // Clock: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        $dumpfile("smart_counter.vcd");
+        $dumpvars(0, tb_smart_counter);
+
+        $monitor("Time=%0t | rst=%b | load=%b | enable=%b | data_in=%d | count=%d",
+                 $time, rst, load, enable, data_in, count);
+
+        // Initial reset
+        rst = 1; load = 0; enable = 0; data_in = 0;
+        #12 rst = 0;
+
+        // Test increment
+        enable = 1;
+        #40;
+
+        // Test load
+        enable = 0; load = 1; data_in = 8'd100;
+        #10 load = 0; enable = 1;
+
+        // Increment after load
+        #30;
+
+        // Apply async reset
+        rst = 1; #8; rst = 0;
+        #20;
+
+        // Load again
+        load = 1; data_in = 8'd200;
+        #10 load = 0; enable = 1;
+        #30;
+
+        $finish;
+    end
+
+endmodule
