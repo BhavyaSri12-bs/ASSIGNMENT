@@ -1,0 +1,31 @@
+`timescale 1ns/1ps
+module bitvault (
+    input  wire       clk,
+    input  wire       rst,        // synchronous reset
+    input  wire       we,         // write enable
+    input  wire [1:0] waddr,      // write address
+    input  wire [7:0] wdata,      // write data
+    input  wire [1:0] raddr,      // read address
+    output reg  [7:0] rdata       // read data
+);
+
+    reg [7:0] regfile [3:0]; // 4 registers, each 8 bits wide
+    integer i;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            for (i = 0; i < 4; i = i + 1)
+                regfile[i] <= 8'd0;
+        end else begin
+            if (we) begin
+                regfile[waddr] <= wdata;
+            end
+        end
+    end
+
+    always @(*) begin
+        rdata = regfile[raddr];
+    end
+
+endmodule
+
