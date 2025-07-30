@@ -1,0 +1,75 @@
+`timescale 1ns/1ps
+module tb_ring_buffer;
+
+    reg clk, rst;
+    reg write_en, read_en;
+    reg [7:0] data_in;
+    wire [7:0] data_out;
+    wire full, empty;
+
+    // DUT
+    ring_buffer dut (
+        .clk(clk),
+        .rst(rst),
+        .write_en(write_en),
+        .read_en(read_en),
+        .data_in(data_in),
+        .data_out(data_out),
+        .full(full),
+        .empty(empty)
+    );
+
+    // Clock: 10ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    task push(input [7:0] val);
+        begin
+            write_en = 1; data_in = val;
+            #10;
+            write_en = 0; #10;
+        end
+    endtask
+
+    task pop;
+        begin
+            read_en = 1;
+            #10;
+            read_en = 0; #10;
+        end
+    endtask
+
+    initial begin
+        $dumpfile("ring_buffer.vcd");
+        $dumpvars(0, tb_ring_buffer);
+
+        $monitor("Time=%0t | WEn=%b REn=%b | In=%d | Out=%d | full=%b empty=%b",
+                 $time, write_en, read_en, data_in, data_out, full, empty);
+
+        // Reset
+        rst = 1; write_en = 0; read_en = 0; data_in = 0;
+        #15 rst = 0;
+
+        // Push 4 values
+        push(10); push(20); push(30); push(40);
+
+        // FIFO should be full now
+        push(50); // should be ignored due to full
+
+        // Pop 2 values
+        pop; pop;
+
+        // Push 2 more to test wrap-around
+        push(60); push(70);
+
+        // Pop all until empty
+        pop; pop; pop; pop;
+
+        // Attempt pop when empty
+        pop;
+
+        #20 $finish;
+    end
+
+endmodule
+
